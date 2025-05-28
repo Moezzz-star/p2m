@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <i class="bi bi-check-circle"></i> Résultat de la classification
+          </div>
+          <div class="card-body">
+            <div class="row gy-4">
+              <div class="col-md-6 text-center">
+                  <img src="{{ url_for('static', filename='uploads/' ~ filename) }}"
+                       class="img-fluid rounded shadow-sm" alt="Uploaded image">
+              </div>
+              <div class="col-md-6">
+                  <h3 class="fw-bold mb-3">Classe prédite : <span class="text-primary">{{ pred_label }}</span></h3>
+
+                  <h5>Probabilités</h5>
+                  {% for label, prob in prob_dict.items() %}
+                      <div class="mb-2">
+                          <span class="small fw-semibold">{{ label }} ({{ (prob*100)|round(1) }} %)</span>
+                          <div class="progress">
+                              <div class="progress-bar {% if label==pred_label %}bg-primary{% else %}bg-secondary{% endif %}"
+                                   role="progressbar" style="width: {{ prob*100 }}%;">
+                              </div>
+                          </div>
+                      </div>
+                  {% endfor %}
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Tester une autre image
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

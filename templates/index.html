@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="bg-gradient py-5" id="hero">
+  <div class="container text-center text-white">
+      <h1 class="display-5 fw-bold">Classifie tes cartes topographiques EEG en un clic !</h1>
+      <p class="lead">Téléverse une image et découvre instantanément le niveau d’attention prédictif (High / Medium / Low).</p>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <i class="bi bi-upload"></i> Téléverser une image
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" id="uploadForm">
+              <div class="mb-3">
+                <input class="form-control" type="file" name="file" accept="image/*" id="fileInput" required>
+              </div>
+              <div class="text-center mb-3">
+                <img id="preview" class="img-fluid rounded shadow d-none" style="max-height:220px;">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-robot"></i> Prédire
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
