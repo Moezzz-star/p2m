@@ -1,4 +1,5 @@
 import os
+import requests
 from flask import Flask, request, render_template, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 import torch
@@ -12,18 +13,34 @@ from PIL import Image
 # ------------------------------
 app = Flask(__name__)
 
-# Uploads sous /static pour être servis par Flask (url_for('static',...))
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # ------------------------------
-# Model : ResNet-18 + FC (3 classes)
+# Télécharger le modèle depuis Hugging Face si absent
 # ------------------------------
-MODEL_PATH = os.path.join('models', 'cnn_attention_model4endo(ratio).pth')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+MODEL_FILENAME = 'cnn_attention_model4endo(ratio).pth'
+MODEL_PATH = os.path.join('models', MODEL_FILENAME)
+MODEL_URL = 'https://huggingface.co/zaazazzz/cnnattentionmodel4endoratio/blob/main/cnn_attention_model4endo(ratio).pth'  # 🔁 Remplace ici
 
+os.makedirs('models', exist_ok=True)
+
+if not os.path.isfile(MODEL_PATH):
+    print(f"📦 Téléchargement du modèle depuis Hugging Face : {MODEL_URL}")
+    response = requests.get(MODEL_URL)
+    if response.status_code == 200:
+        with open(MODEL_PATH, 'wb') as f:
+            f.write(response.content)
+        print("✅ Modèle téléchargé avec succès.")
+    else:
+        raise RuntimeError(f"❌ Échec du téléchargement ({response.status_code})")
+
+# ------------------------------
+# Chargement du modèle
+# ------------------------------
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = models.resnet18(pretrained=False)
 model.fc = nn.Linear(model.fc.in_features, 3)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
@@ -32,7 +49,9 @@ model.eval()
 
 idx_to_label = {0: 'High', 1: 'Low', 2: 'Medium'}
 
-# Transforms identiques à l’entraînement
+# ------------------------------
+# Transformations d'image
+# ------------------------------
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -53,7 +72,6 @@ def predict_image(filepath):
         logits = model(tensor)
         probs = F.softmax(logits, dim=1).cpu().numpy()[0]
 
-    # Dico "High":0.83, ...
     prob_dict = {idx_to_label[i]: float(probs[i]) for i in range(3)}
     pred_label = max(prob_dict, key=prob_dict.get)
     return pred_label, prob_dict
@@ -87,7 +105,6 @@ def predict():
         prob_dict=prob_dict
     )
 
-# Optionnel : servir /static/uploads/ via une route dédiée (sinon url_for('static',…) suffit)
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
@@ -96,5 +113,5 @@ def uploaded_file(filename):
 # Run
 # ------------------------------
 if __name__ == '__main__':
-    # debug=False en prod
     app.run(debug=True)
+
